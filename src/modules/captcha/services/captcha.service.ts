@@ -11,8 +11,7 @@ export class CaptchaService {
         console.log(this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'), token)
         return this.httpService.get<{status: 'ok' | 'failed' | ''}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
                 secret: this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'),
-                token,
-                ip:  '95.24.213.166'
+                token
             }}).pipe(map((res) => res?.data?.status === 'ok'
         ));
     }
