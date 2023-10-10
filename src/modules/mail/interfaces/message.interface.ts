@@ -3,5 +3,6 @@ export interface IMessagePayload {
     phone: string | null;
     subject: string | null;
     message: string | null;
+    token: string | null;
 }
 

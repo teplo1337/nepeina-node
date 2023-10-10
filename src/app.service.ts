@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {IMessagePayload} from "./interfaces/message.interface";
+import {IMessagePayload} from "./modules/mail/interfaces/message.interface";
 
 @Injectable()
 export class AppService {
