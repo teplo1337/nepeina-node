@@ -8,9 +8,10 @@ export class CaptchaService {
                 private config: ConfigService) {}
 
     check(token: string): Observable<boolean> {
-        return this.httpService.get<{statusCode: 200}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
+        console.log()
+        return this.httpService.get<{status: 200}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
                 secret: this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'),
                 token,
-            }}).pipe(map((res) => res.data.statusCode === 200));
+            }}).pipe(map((res) => res?.data?.status === 200));
     }
 }
