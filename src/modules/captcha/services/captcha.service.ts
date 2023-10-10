@@ -8,10 +8,12 @@ export class CaptchaService {
                 private config: ConfigService) {}
 
     check(token: string): Observable<boolean> {
-        console.log()
-        return this.httpService.get<{status: 200}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
+        console.log(this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'), token)
+        return this.httpService.get<{status: 'ok' | 'failed' | ''}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
                 secret: this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'),
                 token,
-            }}).pipe(map((res) => res?.data?.status === 200));
+                ip:  '95.24.213.166'
+            }}).pipe(map((res) => res?.data?.status === 'ok'
+        ));
     }
 }
