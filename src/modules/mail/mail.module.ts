@@ -22,7 +22,6 @@ import {CaptchaModule} from "../captcha/captcha.module";
             pass: config.get('MAIL_PASSWORD'),
           },
         },
-        envFilePath: "enviroments/.env",
         defaults: {
           from: `"Сообщение сгенерировано автоматически" <${config.get('MAIL_FROM')}>`,
         },

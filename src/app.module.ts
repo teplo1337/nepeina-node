@@ -9,6 +9,7 @@ import {CmsModule} from "./modules/cms/cms.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: "environments/.env",
       isGlobal: true, // no need to import into other modules
     }),
     MailModule,
