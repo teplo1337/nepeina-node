@@ -17,7 +17,7 @@ export class CmsService {
         return promisify(fs.unlink);
     }
 
-    private readonly path = 'json/blocks.json';
+    private readonly path = 'static/json/blocks.json';
     constructor(private authService: AuthService) {}
 
     writeBlocks(data: JSON, token: string, fp: IFingerprint): Observable<any>{
