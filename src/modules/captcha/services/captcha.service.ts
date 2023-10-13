@@ -8,7 +8,6 @@ export class CaptchaService {
                 private config: ConfigService) {}
 
     check(token: string): Observable<boolean> {
-        console.log(this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'), token)
         return this.httpService.get<{status: 'ok' | 'failed' | ''}>(`https://${this.config.get('YANDEX_URL')}/validate`, { params: {
                 secret: this.config.get('YANDEX_SMARTCAPTCHA_SERVER_KEY'),
                 token,

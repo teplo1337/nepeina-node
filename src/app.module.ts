@@ -3,13 +3,17 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {MailModule} from "./modules/mail/mail.module";
 import {ConfigModule} from "@nestjs/config";
+import {AuthModule} from "./modules/auth/auth.module";
+import {CmsModule} from "./modules/cms/cms.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // no need to import into other modules
     }),
-    MailModule
+    MailModule,
+    AuthModule,
+    CmsModule
   ],
   controllers: [AppController],
   providers: [AppService],
