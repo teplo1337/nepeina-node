@@ -11,6 +11,7 @@ import {JwtService} from "@nestjs/jwt";
 import {IJwtPayload} from "../interfaces/jwt-payload.interface";
 import {IFingerprint} from "nestjs-fingerprint";
 import {CryptoService} from "../../crypto/services/crypto.service";
+import {ConfigService} from "@nestjs/config";
 
 @Injectable()
 export class MongoService {
@@ -18,7 +19,8 @@ export class MongoService {
         @InjectModel('User') private readonly userModel: Model<IUser>,
         @InjectModel('Tokens') private readonly tokensModel: Model<ITokens>,
         private jwtService: JwtService,
-        private cryptoService: CryptoService
+        private cryptoService: CryptoService,
+        private config: ConfigService
     ) {}
 
     createUser(userPostDTO: UserPostDTO): Observable<ResponseInterface<any>> {
@@ -56,8 +58,8 @@ export class MongoService {
                     return this.cryptoService.genHash(fp)
                         .pipe(map((fingerPrintHash => {
                             const tokenPostDTO: TokenPostDTO = {
-                                token: this.jwtService.sign(payload, {expiresIn: '1h'}),
-                                refreshToken: this.jwtService.sign(payload, {expiresIn: '1h'}),
+                                token: this.jwtService.sign(payload, {expiresIn: this.config.get('TOKEN_TIME')}),
+                                refreshToken: this.jwtService.sign(payload, {expiresIn: this.config.get('REFRESH_TOKEN_TIME')}),
                                 fingerPrintHash,
                                 user: user._id
                             };
