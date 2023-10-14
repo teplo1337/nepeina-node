@@ -74,13 +74,14 @@ export class MongoService {
                 }),
                 switchMap(tokenPostDTO => from(this.tokensModel.deleteMany({user: tokenPostDTO.user}).exec()).pipe(map(_ => tokenPostDTO))),
                 switchMap(tokenPostDTO =>  from(new this.tokensModel(tokenPostDTO).save())),
-                catchError(({_message}) => {
+                catchError((err) => {
                     return of( {
                         success: false,
-                        message: _message
+                        message: err?._message || err
                     });
                 }),
                 map((res: any) => {
+                    console.log(res);
                     return res.success === false ? res : {
                         success: true,
                         message: '',

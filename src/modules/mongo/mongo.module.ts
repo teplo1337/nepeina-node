@@ -11,7 +11,11 @@ import {CryptoModule} from "../crypto/crypto.module";
 @Module({
     providers: [MongoService],
     imports: [
-        MongooseModule.forRoot('mongodb://root:SpaceCrab123@nepeina.ru:27017/'),
+        MongooseModule.forRootAsync({
+            useFactory: async (config: ConfigService) =>
+                ({ uri: config.get('MONGO_URL') }),
+            inject: [ConfigService]
+        }),
         MongooseModule.forFeature([
             { name: 'User', schema: UserSchema },
             { name: 'Tokens', schema: TokensSchema },
