@@ -49,7 +49,7 @@ export class MongoService {
                 switchMap(hashedCredentials =>
                     from(this.userModel.findOne<Document & IUser>({login: hashedCredentials.login, password: hashedCredentials.password})
                         .exec())),
-                switchMap((user) => {
+                switchMap(user => {
                     if (!user) {
                         throw new Error('Неправильный пользователь или пароль');
                     }
@@ -72,29 +72,25 @@ export class MongoService {
 
                         })))
                 }),
-                switchMap((tokenPostDTO) => {
-                    return from(this.tokensModel.deleteMany({user: tokenPostDTO.user}).exec())
-                        .pipe(
-                            switchMap(_ =>  from(new this.tokensModel(tokenPostDTO).save())),
-                            catchError(({_message}) => {
-                                return of( {
-                                    success: false,
-                                    message: _message
-                                });
-                            }),
-                            map((res: any) => {
-                                return res.success === false ? res : {
-                                    success: true,
-                                    message: '',
-                                    data: {
-                                        token: res.token,
-                                        refreshToken: res.refreshToken
-                                    }
-                                }
-                            })
-                        );
+                switchMap(tokenPostDTO => from(this.tokensModel.deleteMany({user: tokenPostDTO.user}).exec()).pipe(map(_ => tokenPostDTO))),
+                switchMap(tokenPostDTO =>  from(new this.tokensModel(tokenPostDTO).save())),
+                catchError(({_message}) => {
+                    return of( {
+                        success: false,
+                        message: _message
+                    });
+                }),
+                map((res: any) => {
+                    return res.success === false ? res : {
+                        success: true,
+                        message: '',
+                        data: {
+                            token: res.token,
+                            refreshToken: res.refreshToken
+                        }
+                    }
                 })
-            )
+            );
     }
 
     hashUserCredentials<T extends  IAuthPayload>(credentials: T): Observable<T> {
