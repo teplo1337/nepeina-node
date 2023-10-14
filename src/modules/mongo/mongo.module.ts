@@ -12,8 +12,7 @@ import {CryptoModule} from "../crypto/crypto.module";
     providers: [MongoService],
     imports: [
         MongooseModule.forRootAsync({
-            useFactory: async (config: ConfigService) =>
-                ({ uri: config.get('MONGO_URL') }),
+            useFactory: async (config: ConfigService) => ({ uri: config.get('MONGO_URL') }),
             inject: [ConfigService]
         }),
         MongooseModule.forFeature([

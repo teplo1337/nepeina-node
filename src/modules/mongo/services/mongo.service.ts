@@ -4,7 +4,7 @@ import {IUser} from "../interfaces/user.interface";
 import {Document, Model,} from "mongoose";
 import {ITokens} from "../interfaces/tokens.interface";
 import {UserPostDTO} from "../dto/user-post.dto.";
-import {catchError, forkJoin, from, map, Observable, of, switchMap} from "rxjs";
+import {catchError, forkJoin, from, map, Observable, of, pipe, switchMap} from "rxjs";
 import {ResponseInterface} from "../interfaces/response.interface";
 import {TokenPostDTO} from "../dto/tokens-post.dto";
 import {JwtService} from "@nestjs/jwt";
@@ -44,64 +44,61 @@ export class MongoService {
     }
 
     createTokenByUserPassword(authPayload: IAuthPayload, fp: IFingerprint): Observable<any> {
-        return this.hashUserCredentials<IAuthPayload>(authPayload)
-            .pipe(
-                switchMap(hashedCredentials =>
-                    from(this.userModel.findOne<Document & IUser>({login: hashedCredentials.login, password: hashedCredentials.password})
-                        .exec())),
-                switchMap(user => {
-                    if (!user) {
-                        throw new Error('Неправильный пользователь или пароль');
-                    }
-
-                    const payload: IJwtPayload = {
-                        sub: user._id,
-                        roles: user.roles
-                    };
-
-                    return this.cryptoService.genHash(JSON.stringify(fp))
-                        .pipe(map((fingerPrintHash => {
-                            const tokenPostDTO: TokenPostDTO = {
-                                token: this.jwtService.sign(payload, {expiresIn: this.config.get('TOKEN_TIME')}),
-                                refreshToken: this.jwtService.sign(payload, {expiresIn: this.config.get('REFRESH_TOKEN_TIME')}),
-                                fingerPrintHash,
-                                user: user._id
-                            };
-
-                            return tokenPostDTO;
-
-                        })))
-                }),
-                switchMap(tokenPostDTO => from(this.tokensModel.deleteMany({user: tokenPostDTO.user}).exec()).pipe(map(_ => tokenPostDTO))),
-                switchMap(tokenPostDTO =>  from(new this.tokensModel(tokenPostDTO).save())),
-                catchError((err) => {
-                    return of( {
-                        success: false,
-                        message: err?._message || err
-                    });
-                }),
-                map((res: any) => {
-                    console.log(res);
-                    return res.success === false ? res : {
-                        success: true,
-                        message: '',
-                        data: {
-                            token: res.token,
-                            refreshToken: res.refreshToken
+        return  from(this.userModel.findOne<Document & IUser>({login: authPayload.login}).exec())
+                .pipe(
+                    switchMap((user) =>  this.cryptoService
+                        .compareHash(authPayload.password, user.password)
+                        .pipe(map(result => result ? user : null))
+                    ),
+                    switchMap(user => {
+                        if (!user) {
+                            throw new Error('Неправильный пользователь или пароль');
                         }
-                    }
-                })
+
+                        const payload: IJwtPayload = {
+                            sub: user._id,
+                            roles: user.roles
+                        };
+
+                        return this.cryptoService.genHash(JSON.stringify(fp))
+                            .pipe(map((fingerPrintHash => {
+                                const tokenPostDTO: TokenPostDTO = {
+                                    token: this.jwtService.sign(payload, {expiresIn: this.config.get('TOKEN_TIME')}),
+                                    refreshToken: this.jwtService.sign(payload, {expiresIn: this.config.get('REFRESH_TOKEN_TIME')}),
+                                    fingerPrintHash,
+                                    user: user._id
+                                };
+
+                                return tokenPostDTO;
+
+                            })))
+                    }),
+                    switchMap(tokenPostDTO => from(this.tokensModel.deleteMany({user: tokenPostDTO.user}).exec()).pipe(map(_ => tokenPostDTO))),
+                    switchMap(tokenPostDTO =>  from(new this.tokensModel(tokenPostDTO).save())),
+                    catchError((err) => {
+                        return of( {
+                            success: false,
+                            message: err?._message || err
+                        });
+                    }),
+                    map((res: any) => {
+                        console.log(res);
+                        return res.success === false ? res : {
+                            success: true,
+                            message: '',
+                            data: {
+                                token: res.token,
+                                refreshToken: res.refreshToken
+                            }
+                        }
+                    })
             );
     }
 
     hashUserCredentials<T extends  IAuthPayload>(credentials: T): Observable<T> {
-        return forkJoin([
-            this.cryptoService.genHash(credentials.login),
-            this.cryptoService.genHash(credentials.password)]
-        )
-            .pipe(map(([login, password]) => ({
+        return from(this.cryptoService.genHash(credentials.password))
+            .pipe(map(password => ({
                 ...credentials,
-                login,
                 password
             })));
     }
