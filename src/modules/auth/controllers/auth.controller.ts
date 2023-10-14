@@ -5,6 +5,7 @@ import {ICreateUser} from "../interfaces/create-user.interface";
 import {of, switchMap} from "rxjs";
 import {IUser} from "../../mongo/interfaces/user.interface";
 import {Fingerprint, IFingerprint} from "nestjs-fingerprint";
+import {IAuthPayload} from "../interfaces/auth.interface";
 
 @Controller('api/v1')
 export class AuthController {
@@ -36,7 +37,7 @@ export class AuthController {
     @Post( 'auth')
     @HttpCode(200)
     auth(
-        @Body() body: IUser,
+        @Body() body: IAuthPayload,
         @Res({passthrough: true}) res: Response,
         @Fingerprint() fp: IFingerprint
     ) {

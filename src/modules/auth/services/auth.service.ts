@@ -6,6 +6,7 @@ import {ResponseInterface} from "../../mongo/interfaces/response.interface";
 import {IUser} from "../../mongo/interfaces/user.interface";
 import {ITokensResponse} from "../../mongo/interfaces/tokens-response.interface";
 import {IFingerprint} from "nestjs-fingerprint";
+import {IAuthPayload} from "../interfaces/auth.interface";
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,7 @@ export class AuthService {
         return this.mongoService.createUser(body)
     }
 
-    loginUser(body: IUser, fp: IFingerprint): Observable<ResponseInterface<ITokensResponse>> {
+    loginUser(body: IAuthPayload, fp: IFingerprint): Observable<ResponseInterface<ITokensResponse>> {
         return this.mongoService.createTokenByUserPassword(body, fp);
     }
 

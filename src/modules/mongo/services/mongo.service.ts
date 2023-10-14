@@ -12,6 +12,7 @@ import {IJwtPayload} from "../interfaces/jwt-payload.interface";
 import {IFingerprint} from "nestjs-fingerprint";
 import {CryptoService} from "../../crypto/services/crypto.service";
 import {ConfigService} from "@nestjs/config";
+import {IAuthPayload} from "../../auth/interfaces/auth.interface";
 
 @Injectable()
 export class MongoService {
@@ -24,10 +25,10 @@ export class MongoService {
     ) {}
 
     createUser(userPostDTO: UserPostDTO): Observable<ResponseInterface<any>> {
-        return from(new this.userModel(userPostDTO).save())
-            .pipe(
+        return this.hashUserCredentials(userPostDTO).pipe(
+            switchMap(hashedCredentials =>
+                from(new this.userModel(hashedCredentials).save())),
                 catchError(({_message}) => {
-                    console.log(_message)
                     return of( {
                         success: false,
                         message: _message
@@ -42,9 +43,12 @@ export class MongoService {
             )
     }
 
-    createTokenByUserPassword(u: UserPostDTO, fp: IFingerprint): Observable<any> {
-        return from(this.userModel.findOne<Document & IUser>({login: u.login, password: u.password})
-            .exec()).pipe(
+    createTokenByUserPassword(authPayload: IAuthPayload, fp: IFingerprint): Observable<any> {
+        return this.hashUserCredentials<IAuthPayload>(authPayload)
+            .pipe(
+                switchMap(hashedCredentials =>
+                    from(this.userModel.findOne<Document & IUser>({login: hashedCredentials.login, password: hashedCredentials.password})
+                        .exec())),
                 switchMap((user) => {
                     if (!user) {
                         throw new Error('Неправильный пользователь или пароль');
@@ -55,7 +59,7 @@ export class MongoService {
                         roles: user.roles
                     };
 
-                    return this.cryptoService.genHash(fp)
+                    return this.cryptoService.genHash(JSON.stringify(fp))
                         .pipe(map((fingerPrintHash => {
                             const tokenPostDTO: TokenPostDTO = {
                                 token: this.jwtService.sign(payload, {expiresIn: this.config.get('TOKEN_TIME')}),
@@ -90,12 +94,24 @@ export class MongoService {
                             })
                         );
                 })
+            )
+    }
+
+    hashUserCredentials<T extends  IAuthPayload>(credentials: T): Observable<T> {
+        return forkJoin([
+            this.cryptoService.genHash(credentials.login),
+            this.cryptoService.genHash(credentials.password)]
         )
+            .pipe(map(([login, password]) => ({
+                ...credentials,
+                login,
+                password
+            })));
     }
 
     createTokenByRefreshToken(refreshToken: string, fp: IFingerprint): Observable<any> {
         return forkJoin([
-            this.cryptoService.genHash(fp),
+            this.cryptoService.genHash(JSON.stringify(fp)),
             from(this.jwtService.verifyAsync(refreshToken, {algorithms: ['HS256']})),
         ])
             .pipe(
@@ -125,7 +141,7 @@ export class MongoService {
     public verifyRequest(token: string, fp: IFingerprint): Observable<boolean> {
 
         return forkJoin([
-            this.cryptoService.genHash(fp),
+            this.cryptoService.genHash(JSON.stringify(fp)),
             from(this.jwtService.verifyAsync(token, {algorithms: ['HS256']})).pipe(map(v => !!v)),
         ]).pipe(
             switchMap(([fingerPrintHash,tokenValid]) =>
